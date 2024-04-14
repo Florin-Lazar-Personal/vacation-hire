@@ -26,7 +26,7 @@ Vacation Hire will be developed using a microservice architecture:
 > - Management of asset attributes: by allowing to define a set of attributes and their values that will be associated to a given asset
 > 
 > **Associated microservice:**
-> - __Identity API__: developed in .NET Core using ASP.NET Core API. Data persistence: SQL Server. ORM: Entity Framework Core.
+> - __Asset Administration API__: developed in .NET Core using ASP.NET Core API. Data persistence: SQL Server. ORM: Entity Framework Core.
 > 
 > **Depends on:**
 > - __Identity API__: for access token validation.
