@@ -66,6 +66,48 @@ Vacation Hire will be developed using a microservice architecture:
 > - __Asset Administration API__: for asset validation.
 > - __Pricing API__: for pricing rule associations with rented asset, damages or missing characteristics.
 
+### Invoicing
+> **Responsibilities:**
+> - Allows generation of invoices for rental process.
+> - Integrates with __Rental API__ for invoice generation based on the details of a rental.
+> - Integrates with __Pricing API__ for the calculation of actual costs during the invoice generation.
+> - Manages the invoice lifecycle, including knowing when an invoice is paid by means of external synchronization via integration events.
+> - Keeps an audit trail for the invoice changes.
+>
+> **Associated microservice:**
+> - __Invoicing API__: developed in .NET Core using ASP.NET Core API. Data persistence: SQL Server. ORM: Entity Framework Core.
+> 
+> **Depends on:**
+> - __Identity API__: for access token validation.
+> - __Rental API__: for getting the rental details upon invoice generation.
+> - __Pricing API__: for pricing rule associations with rented asset, damages or missing characteristics.
+
+### Payment processing
+> **Responsibilities:**
+> - Integrates with __Invoicing API__ for the payment initiation.
+> - Allows online payments by integrating with an external payment service. The integration must be pluggable, so that the payment service integration can be switched from one provider to another, without affecting the service contract.
+> - Exposes webhooks that can be used for getting notified about transactions approval status.
+> - Keeps track of the transactions lifecycle.
+> - Keeps an audit trail for the transaction status changes.
+>
+> **Associated microservice:**
+> - __Payment API__: developed in .NET Core using ASP.NET Core API. Data persistence: SQL Server. ORM: Entity Framework Core.
+> 
+> **Depends on:**
+> - __Identity API__: for access token validation.
+> - __Invoicing API__: for the payment initiation.
+
+### Exchange rates for price conversions
+> **Responsibilities:**
+> - Allows obtaining exchange rates between currencies by integrating with an external exchange rate service. The integration must be pluggable, so that the payment service integration can be switched from one provider to another, without affecting the service contract.
+> - Keeps track of the currency exchanges performed, their timestamp and exchange rate provider for traceability.
+>
+> **Associated microservice:**
+> - __Exchange Rate API__: developed in .NET Core using ASP.NET Core API. Data persistence: SQL Server. ORM: Entity Framework Core.
+> 
+> **Depends on:**
+> - __Identity API__: for access token validation.
+
 
 ## Dependency Diagram
 ![DependencyDiagram](/img/VacationHire-Dependency-Diagram-v1.svg)
