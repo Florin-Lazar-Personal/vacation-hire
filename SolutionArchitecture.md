@@ -2,7 +2,7 @@
 Vacation Hire will be developed using a microservice architecture:
 ![SolutionArchitecture](/img/VacationHire-Component-Diagram-v1.svg)
 
-##Bounded contexts
+## Bounded contexts
 
 ### Authentication and Authorization
 **Responsibilities:**
