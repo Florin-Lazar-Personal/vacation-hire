@@ -19,7 +19,7 @@ Vacation Hire will be developed using a microservice architecture:
 > **Depends on:**
 > - None
 
-> ### Asset management
+### Asset management
 > **Responsibilities:**
 > - Management of asset categories (types) by enabling CRUD operations for asset categories (types)
 > - Management of assets: by enabling CRUD operations for assets
