@@ -11,7 +11,7 @@ Vacation Hire will be developed using a microservice architecture:
 > - Defines the set of supported OAuth clients (apps) that can integrate with the platform and their allowed API usage
 > - Defines the role based access control policies
 > - Manages the users database
-> - Enables user login
+> - Enables user operations such as: login, MFA, forgot password, reset password, change password
 > - Enables access tokens issuance, validation, renewal and revokation by using OAuth 2.0 and OIDC protocols
 > 
 > **Associated microservice:**
@@ -50,6 +50,22 @@ Vacation Hire will be developed using a microservice architecture:
 > 
 > **Depends on:**
 > - __Identity API__: for access token validation.
+
+### Rental management
+> **Responsibilities:**
+> - Handles the rental process including: creation of new rentals, specifying rented asset, handling rental lifecycle, observing damages and missing characteristics upon rental end.
+> - Integrates with __Asset Administration API__ for asset validation upon rental creation.
+> - Integrates with __Pricing API__ for allowing to specify the pricing rules that apply for the asset rental, or for the observed damages or missing characteristics.
+> - Keeps an audit trail for the rental process (changes, events occured, etc)
+>
+> **Associated microservice:**
+> - __Rental API__: developed in .NET Core using ASP.NET Core API. Data persistence: SQL Server. ORM: Entity Framework Core.
+> 
+> **Depends on:**
+> - __Identity API__: for access token validation.
+> - __Asset Administration API__: for asset validation.
+> - __Pricing API__: for pricing rule associations with rented asset, damages or missing characteristics.
+
 
 ## Dependency Diagram
 ![DependencyDiagram](/img/VacationHire-Dependency-Diagram-v1.svg)
