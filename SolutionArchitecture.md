@@ -5,7 +5,7 @@ Vacation Hire will be developed using a microservice architecture:
 
 ## Bounded contexts
 
-### Authentication and Authorization
+### (1) Authentication and Authorization
 > **Responsibilities:**
 > - Defines and manages the platform authorization setup, by defining protected API Resources and associated scopes
 > - Defines the set of supported OAuth clients (apps) that can integrate with the platform and their allowed API usage
@@ -20,7 +20,8 @@ Vacation Hire will be developed using a microservice architecture:
 > **Depends on:**
 > - None
 
-### Asset management
+
+### (2) Asset management
 > **Responsibilities:**
 > - Management of asset categories (types) by enabling CRUD operations for asset categories (types)
 > - Management of assets: by enabling CRUD operations for assets
@@ -32,7 +33,8 @@ Vacation Hire will be developed using a microservice architecture:
 > **Depends on:**
 > - __Identity API__: for access token validation.
 
-### Pricing definition
+
+### (3) Pricing definition
 > **Responsibilities:**
 > - Implements a flexible / rule based pricing model that can be applied for asset rental, but also for damages associated with the asset rental, or missing characteristics noticed upon asset return.
 > - Allows management of pricing categories: by implementing a set of CRUD operations for pricing categories.
@@ -51,7 +53,19 @@ Vacation Hire will be developed using a microservice architecture:
 > **Depends on:**
 > - __Identity API__: for access token validation.
 
-### Rental management
+
+### (4) Customer management
+> **Responsibilities:**
+> - Manages customer data and associated details by enabling CRUD operations for customers.
+> 
+> **Associated microservice:**
+> - __Customers API__: developed in .NET Core using ASP.NET Core API. Data persistence: SQL Server. ORM: Entity Framework Core.
+> 
+> **Depends on:**
+> - __Identity API__: for access token validation.
+
+
+### (5) Rental management
 > **Responsibilities:**
 > - Handles the rental process including: creation of new rentals, specifying rented asset, handling rental lifecycle, observing damages and missing characteristics upon rental end.
 > - Integrates with __Asset Administration API__ for asset validation upon rental creation.
@@ -66,7 +80,8 @@ Vacation Hire will be developed using a microservice architecture:
 > - __Asset Administration API__: for asset validation.
 > - __Pricing API__: for pricing rule associations with rented asset, damages or missing characteristics.
 
-### Invoicing
+
+### (6) Invoicing
 > **Responsibilities:**
 > - Allows generation of invoices for rental process.
 > - Integrates with __Rental API__ for invoice generation based on the details of a rental.
@@ -82,7 +97,8 @@ Vacation Hire will be developed using a microservice architecture:
 > - __Rental API__: for getting the rental details upon invoice generation.
 > - __Pricing API__: for pricing rule associations with rented asset, damages or missing characteristics.
 
-### Payment processing
+
+### (7) Payment processing
 > **Responsibilities:**
 > - Integrates with __Invoicing API__ for the payment initiation.
 > - Allows online payments by integrating with an external payment service. The integration must be pluggable, so that the payment service integration can be switched from one provider to another, without affecting the service contract.
@@ -97,7 +113,8 @@ Vacation Hire will be developed using a microservice architecture:
 > - __Identity API__: for access token validation.
 > - __Invoicing API__: for the payment initiation.
 
-### Exchange rates for price conversions
+
+### (8) Exchange rates for price conversions
 > **Responsibilities:**
 > - Allows obtaining exchange rates between currencies by integrating with an external exchange rate service. The integration must be pluggable, so that the payment service integration can be switched from one provider to another, without affecting the service contract.
 > - Keeps track of the currency exchanges performed, their timestamp and exchange rate provider for traceability.
@@ -108,6 +125,22 @@ Vacation Hire will be developed using a microservice architecture:
 > **Depends on:**
 > - __Identity API__: for access token validation.
 
+
+## Supporting services
+Special consideration must be paid to dependencies between microservices, especially in a Kubernetes cluster deployment model, where PODs readiness and liveness may depend on the fact that a dependent service is available or not.
+In such cases, a service becoming unavailable may lead to a cascading effect of other services becoming unavailable as well, hurting the platform availability/usability.
+Circular (or bi-directional) dependencies also raise issues during (re)deployment, when one service in order to be redeployed will trigger a dependent service to become unhealthy, but also cannot start properly because of depending on the same service which it made unavailable during the redeploy.
+In order to address such possible scenarios, certain functionalities need to be developed in such a manner that hard/synchronous direct dependencies are avoided and the platform relies rather on async/weak dependencies via events and messages.
+
+In order to facilitate a simple, yet with a clear semantic communication model we propose using the NServiceBus library with the following communication styles:
+- Integration events: are raised by the microservice that undergoes a certain state change, in order to notify any potential interested listeners. 
+  - An integration event can be published only from within the service that defines it (event semantics)
+  - An integration event can have 0 ... N listeners (either handlers inside the microservice that raised the event, either inside other microservices that are interested in reacting to that event)
+  - If Service A publishes an event and Service B listens to that event, this introduces a weak depenency: Service B => depends-on => Service A
+- Commands: are accepted by the microservice that knows how to react to it
+  - A command can have a single logical owner (the service that defines it; it must also implement the handling logic for it)
+  - A command can be sent either from within the service that defines it, or from within another microservice.
+  - If Service A sends a command to Service B, this introduces a weak depenency: Service A => depends-on => Service B
 
 ## Dependency Diagram
 ![DependencyDiagram](/img/VacationHire-Dependency-Diagram-v1.svg)
