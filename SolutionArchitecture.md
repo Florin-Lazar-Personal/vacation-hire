@@ -129,19 +129,80 @@ Vacation Hire will be developed using a microservice architecture:
 ## Supporting services
 Special consideration must be paid to dependencies between microservices, especially in a Kubernetes cluster deployment model, where PODs readiness and liveness may depend on the fact that a dependent service is available or not.
 In such cases, a service becoming unavailable may lead to a cascading effect of other services becoming unavailable as well, hurting the platform availability/usability.
+
 Circular (or bi-directional) dependencies also raise issues during (re)deployment, when one service in order to be redeployed will trigger a dependent service to become unhealthy, but also cannot start properly because of depending on the same service which it made unavailable during the redeploy.
+
 In order to address such possible scenarios, certain functionalities need to be developed in such a manner that hard/synchronous direct dependencies are avoided and the platform relies rather on async/weak dependencies via events and messages.
 
-In order to facilitate a simple, yet with a clear semantic communication model we propose using the NServiceBus library with the following communication styles:
-- Integration events: are raised by the microservice that undergoes a certain state change, in order to notify any potential interested listeners. 
+In order to facilitate a simple, yet with a clear semantic communication model we propose using the ![NServiceBus](https://docs.particular.net/nservicebus/messaging/messages-events-commands) library with the following communication styles:
+- __Integration events__: are raised by the microservice that undergoes a certain state change, in order to notify any potential interested listeners. 
   - An integration event can be published only from within the service that defines it (event semantics)
   - An integration event can have 0 ... N listeners (either handlers inside the microservice that raised the event, either inside other microservices that are interested in reacting to that event)
-  - If Service A publishes an event and Service B listens to that event, this introduces a weak depenency: Service B => depends-on => Service A
-- Commands: are accepted by the microservice that knows how to react to it
+  - If Service A publishes an event and Service B listens to that event, this introduces a weak depenency: Service B (listener) => depends-on => Service A (publisher)
+- __Commands__: are accepted by the microservice that knows how to react to it
   - A command can have a single logical owner (the service that defines it; it must also implement the handling logic for it)
   - A command can be sent either from within the service that defines it, or from within another microservice.
-  - If Service A sends a command to Service B, this introduces a weak depenency: Service A => depends-on => Service B
+  - If Service A sends a command to Service B, this introduces a weak depenency: Service A (command sender) => depends-on => Service B (command owner)
+
+NServiceBus also offers benefits from operational perspective:
+- it abstracts the transport layer, hence we can change easily the underlying messaging technology (e.g.: RabbitMQ or Azure Service Bus)
+- it automatically configures the transport layer topology (e.g: automatically create exchanges and queues)
+- it provides out-of-the box resilience strategies (message processing re-queue & retry in case of errors, supporting both immediate retries and delayed retries as well as dead letter queue(s)).
+
+
+To minimize coupling between microservices and also to support automatic synchronization of updates between microservices, the following support services will be added to the platform:
+
+### (1) Asset Attribute Values Pricing Synchronization Service
+> **Responsibilities:**
+> - Listens to asset-related events raised by __Asset Management API__, extracts (asset attribute, attribute value) pairs and synchronizes them with __Pricing API__ so they are available to be used for pricing rules definitions.
+> - Allows a clearer separation of concerns between asset management (who doesn't need to know that there is such concept as pricing rules) and pricing definition (which doesn't need to know how to extract asset attributes that may influence pricing).
+> - Allows avoiding a direct dependency between __Pricing API__ and __Asset Administration API__, allowing for e.g. __Pricing API__ to evolve over time and support pricing rules based also on other attribute kinds (not only asset-related).
+> - Allows minimizing deployment depenendencies between __Pricing API__ and __Asset Administration API__:
+>   - For e.g. if __Asset Administration API__ becomes unhealthy, or is redeployed, the effect doesn't cascade to __Pricing API__ and system is still able to operate with existing pricing rules.
+>   - If __Pricing API__ becomes unhealthy, or is redeployed, any integration events published by __Asset Administration API__ in the meanwhile, will be eventually re-delivered after service comes back online, due __Asset Attribute Values Pricing Synchronization Service__ resilience strategies.
+>
+> **Associated microservice:**
+> - __Asset Attribute Values Pricing Synchronization Service__: developed in .NET Core using NServiceBus.
+> 
+> **Depends on:**
+> - __Asset Administration API__: because listens to asset-related events.
+> - __Pricing API__: sends commands to update the set of pricing attributes that are available to be used when defining pricin policies.
+
+
+### (2) Rented Asset Status Synchronization Service
+> **Responsibilities:**
+> - Listens to rental-related events raised by __Rental API__, extracts the rented asset and synchronizes asset status (availability) with __Asset Administration API__ so the asset status is updated in nearly real time.
+> - Allows a clearer separation of concerns between asset management (who doesn't need to know that there is such concept as rental lifecycle) and rentals (which doesn't need to know about the need to update asset availability).
+> - Allows avoiding a cyclic dependency between __Rental API__ and __Asset Administration API__
+>
+> **Associated microservice:**
+> - __Rented Asset Status Synchronization Service__: developed in .NET Core using NServiceBus.
+> 
+> **Depends on:**
+> - __Rental API__: because listens to rental lifecycle related events.
+> - __Asset Administration API__: sends commands to update the asset availability.
+
+
+### (3) Invoice Payment Synchronization Service
+> **Responsibilities:**
+> - Listens to payment-related events raised by __Payment API__, extracts the corresponding invoice and synchronizes invoice status with __Invoicing API__ so the invoice status is updated when payment is made.
+> - Allows a clearer separation of concerns between payment management (who doesn't need to know that there is such concept as invoice lifecycle) and invoicing (which doesn't need to know about the details of payment processing).
+> - Allows avoiding a cyclic dependency between __Payment API__ and __Invoicing API__
+>
+> **Associated microservice:**
+> - __Invoice Payment Synchronization Service__: developed in .NET Core using NServiceBus.
+> 
+> **Depends on:**
+> - __Payment API__: because listens to payment transactions approval related events.
+> - __Invoicing API__: sends commands to update the invoice status.
+
 
 ## Dependency Diagram
 ![DependencyDiagram](/img/VacationHire-Dependency-Diagram-v1.svg)
 
+
+## Other aspects
+Other aspects to be considered for development:
+- Services will expose healthchecks that can be used for Kubernetes startup/liveness/readiness probe (see also: https://andrewlock.net/deploying-asp-net-core-applications-to-kubernetes-part-6-adding-health-checks-with-liveness-readiness-and-startup-probes/)
+- Where synchronous HTTP calls are used for inter-service communication, resilience strategies must be configured (retry policies, circuit breaker). ![Polly](https://github.com/App-vNext/Polly) library is a good fit for such policy definitions.
+- When a service publishes integration events in order to signal state change, the ![Transactional Outbox Pattern](https://andrewlock.net/deploying-asp-net-core-applications-to-kubernetes-part-6-adding-health-checks-with-liveness-readiness-and-startup-probes/) will be used to ensure consistency between state update and event publish. ![NServiceBus](https://docs.particular.net/nservicebus/outbox/) comes with a robust implementation, allowing usage of multiple database types for the pattern implementation.
