@@ -134,7 +134,7 @@ Circular (or bi-directional) dependencies also raise issues during (re)deploymen
 
 In order to address such possible scenarios, certain functionalities need to be developed in such a manner that hard/synchronous direct dependencies are avoided and the platform relies rather on async/weak dependencies via events and messages.
 
-In order to facilitate a simple, yet with a clear semantic communication model we propose using the ![NServiceBus](https://docs.particular.net/nservicebus/messaging/messages-events-commands) library with the following communication styles:
+In order to facilitate a simple, yet with a clear semantic communication model we propose using the [NServiceBus](https://docs.particular.net/nservicebus/messaging/messages-events-commands) library with the following communication styles:
 - __Integration events__: are raised by the microservice that undergoes a certain state change, in order to notify any potential interested listeners. 
   - An integration event can be published only from within the service that defines it (event semantics)
   - An integration event can have 0 ... N listeners (either handlers inside the microservice that raised the event, either inside other microservices that are interested in reacting to that event)
@@ -204,5 +204,5 @@ To minimize coupling between microservices and also to support automatic synchro
 ## Other aspects
 Other aspects to be considered for development:
 - Services will expose healthchecks that can be used for Kubernetes startup/liveness/readiness probe (see also: https://andrewlock.net/deploying-asp-net-core-applications-to-kubernetes-part-6-adding-health-checks-with-liveness-readiness-and-startup-probes/)
-- Where synchronous HTTP calls are used for inter-service communication, resilience strategies must be configured (retry policies, circuit breaker). ![Polly](https://github.com/App-vNext/Polly) library is a good fit for such policy definitions.
-- When a service publishes integration events in order to signal state change, the ![Transactional Outbox Pattern](https://andrewlock.net/deploying-asp-net-core-applications-to-kubernetes-part-6-adding-health-checks-with-liveness-readiness-and-startup-probes/) will be used to ensure consistency between state update and event publish. ![NServiceBus](https://docs.particular.net/nservicebus/outbox/) comes with a robust implementation, allowing usage of multiple database types for the pattern implementation.
+- Where synchronous HTTP calls are used for inter-service communication, resilience strategies must be configured (retry policies, circuit breaker). [Polly](https://github.com/App-vNext/Polly) library is a good fit for such policy definitions.
+- When a service publishes integration events in order to signal state change, the [Transactional Outbox Pattern](https://andrewlock.net/deploying-asp-net-core-applications-to-kubernetes-part-6-adding-health-checks-with-liveness-readiness-and-startup-probes/) will be used to ensure consistency between state update and event publish. [NServiceBus](https://docs.particular.net/nservicebus/outbox/) comes with a robust implementation, allowing usage of multiple database types for the pattern implementation.
