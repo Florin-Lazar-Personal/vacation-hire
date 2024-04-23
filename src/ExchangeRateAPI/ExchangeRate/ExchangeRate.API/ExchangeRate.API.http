@@ -1,0 +1,14 @@
+@host_and_port = localhost:7190
+
+POST https://{{host_and_port}}/api/exchange-rates
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6IkZsb3JpbiIsInN1YiI6IkZsb3JpbiIsImp0aSI6ImU2MDVmMmQ2IiwiYXVkIjoiRXhjaGFuZ2VSYXRlQXBpIiwibmJmIjoxNzEzOTAxODExLCJleHAiOjE3NDU0Mzc4MTEsImlhdCI6MTcxMzkwMTgxMiwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NzE5MCJ9.ayaZ1j68oxWoQhG55NCod_0WwNOaokzIZyu0GgTyrfU
+
+{
+  "sourceCurrency": "EUR",
+  "targetCurrency": "USD",
+  "amount": 50
+}
+
+###
