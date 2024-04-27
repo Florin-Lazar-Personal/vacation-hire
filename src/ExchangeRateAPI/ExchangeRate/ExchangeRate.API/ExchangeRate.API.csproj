@@ -15,4 +15,10 @@
     <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="8.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ExchangeRate.Infrastructure\ExchangeRate.Infrastructure.csproj" />
+    <ProjectReference Include="..\ExchangeRate.Providers.CurrencyLayer\ExchangeRate.Providers.CurrencyLayer.csproj" />
+    <ProjectReference Include="..\ExchangeRate.Providers.Mock\ExchangeRate.Providers.Mock.csproj" />
+  </ItemGroup>
+
 </Project>

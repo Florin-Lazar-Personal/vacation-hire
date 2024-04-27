@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
+using ExchangeRate.DependencyInjection;
+using ExchangeRate.Providers.Mock;
+using ExchangeRate.Infrastructure.DependencyInjection;
 
 namespace ExchangeRate.API
 {
@@ -57,7 +60,9 @@ namespace ExchangeRate.API
                 
             });
 
-
+            // exchange rate DI setup
+            builder.Services.AddExchangeRate(p => p.AddMockProvider())
+                            .AddExchangeRateInfrastructure();
 
             var app = builder.Build();
 

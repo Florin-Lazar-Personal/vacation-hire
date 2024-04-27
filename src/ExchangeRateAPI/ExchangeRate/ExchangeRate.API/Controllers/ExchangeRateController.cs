@@ -1,5 +1,7 @@
-﻿using ExchangeRate.API.Models;
+﻿using ExchangeRate.Abstractions.Services;
+using ExchangeRate.API.Models;
 using ExchangeRate.API.Models.Swagger;
+using ExchangeRate.Validation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,22 +15,36 @@ namespace ExchangeRate.API.Controllers
     [ApiController]
     public class ExchangeRateController : ControllerBase
     {
+        private readonly IExchangeRateService _exchangeRateService;
+
+        public ExchangeRateController(IExchangeRateService exchangeRateService)
+        { 
+            _exchangeRateService = Require.ThatArgument(exchangeRateService, nameof(exchangeRateService))
+                                          .IsNotNull();
+        }
+
         [SwaggerRequestExample(typeof(CurrencyExchangeRequest), typeof(CurrencyExchangeRequestExample))]
         [HttpPost]
         public async Task<ActionResult<CurrencyExchangeRateResponse>> ExchangeAsync(
             [FromBody][Required] CurrencyExchangeRequest request)
         {
-            await Task.CompletedTask;
+            // TODO: in next iteration add AutoMapper
+            var sourceCurrencyAmount = new ExchangeRate.Models.CurrencyAmount(request.SourceCurrency, request.Amount);
+            var targetCurrency = new ExchangeRate.Models.Currency(request.TargetCurrency);
 
-            decimal quota = 1.5M;
+            ExchangeRate.Models.CurrencyConversionResult result = await _exchangeRateService.ExchangeCurrencyAsync(
+                sourceCurrencyAmount,
+                targetCurrency);
 
-            return Ok(new CurrencyExchangeRateResponse(
-                request.SourceCurrency,
-                request.TargetCurrency,
-                DateTimeOffset.UtcNow,
-                quota,
-                request.Amount,
-                request.Amount * quota));
+            CurrencyExchangeRateResponse response = new CurrencyExchangeRateResponse(
+                sourceCurrency: request.SourceCurrency,
+                targetCurrency: request.TargetCurrency,
+                timestamp: result.Timestamp,
+                quota: result.ExchangeRate,
+                amount: request.Amount,
+                result: result.ExchangedAmount);
+
+            return Ok(response);
         }
     }
 }
