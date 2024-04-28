@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 using ExchangeRate.DependencyInjection;
 using ExchangeRate.Providers.Mock;
+using ExchangeRate.Providers.CurrencyLayer;
 using ExchangeRate.Infrastructure.DependencyInjection;
 
 namespace ExchangeRate.API
@@ -61,7 +62,14 @@ namespace ExchangeRate.API
             });
 
             // exchange rate DI setup
-            builder.Services.AddExchangeRate(p => p.AddMockProvider())
+            builder.Services
+                            //.AddExchangeRate(p => p.AddMockProvider())
+                            .AddExchangeRate(p => p.AddCurrencyLayer(o =>
+                            {
+                                // TODO: read from config
+                                o.BaseUrl = "http://api.currencylayer.com";
+                                o.AccessKey = "ACCESS_KEY";
+                            }))
                             .AddExchangeRateInfrastructure();
 
             var app = builder.Build();

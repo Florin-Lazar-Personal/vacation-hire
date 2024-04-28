@@ -6,17 +6,17 @@ namespace ExchangeRate.Providers.DependencyInjection
 {
     public class ExchangeRateProviderBuilder
     {
-        private readonly IServiceCollection _services;
-
         public ExchangeRateProviderBuilder(IServiceCollection services)
         {
-            _services = services;
+            Services = services;
         }
+
+        public IServiceCollection Services { get; }
 
         public ExchangeRateProviderBuilder AddExchangeRateProvider<T>()
             where T : class, IExchangeRateProvider
         {
-            _services.AddScoped<IExchangeRateProvider, T>();
+            Services.AddScoped<IExchangeRateProvider, T>();
 
             return this;
         }
@@ -24,7 +24,7 @@ namespace ExchangeRate.Providers.DependencyInjection
         public ExchangeRateProviderBuilder AddExchangeRateProvider<T>(Func<IServiceProvider, T> factory)
             where T : class, IExchangeRateProvider
         {
-            _services.AddScoped<IExchangeRateProvider, T>(factory);
+            Services.AddScoped<IExchangeRateProvider, T>(factory);
 
             return this;
         }

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ExchangeRate.Providers.Mock
 {
-    public class MockExchangeRateProvider : IExchangeRateProvider
+    internal class MockExchangeRateProvider : IExchangeRateProvider
     {
         public string Name => "MockProvider";
 
