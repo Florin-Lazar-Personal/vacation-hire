@@ -15,8 +15,10 @@ namespace ExchangeRate.Providers.CurrencyLayer
             CurrencyLayerOptions options = new CurrencyLayerOptions();
             optionsSetup(options);
 
+            RefitSettings refitSettings = new RefitSettings(new NewtonsoftJsonContentSerializer());
+
             builder.Services
-                .AddRefitClient<ICurrencyLayerApi>()
+                .AddRefitClient<ICurrencyLayerApi>(refitSettings)
                 .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
                 .AddHttpMessageHandler(_ => new CurrencyLayerAccessKeyHandler(options.AccessKey));
 

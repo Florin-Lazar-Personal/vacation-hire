@@ -5,6 +5,7 @@ using ExchangeRate.DependencyInjection;
 using ExchangeRate.Providers.Mock;
 using ExchangeRate.Providers.CurrencyLayer;
 using ExchangeRate.Infrastructure.DependencyInjection;
+using Newtonsoft.Json;
 
 namespace ExchangeRate.API
 {
@@ -14,6 +15,7 @@ namespace ExchangeRate.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
+
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -21,7 +23,7 @@ namespace ExchangeRate.API
             }).AddJwtBearer();
 
             // Add services to the container.
-            builder.Services.AddControllers();
+            builder.Services.AddControllers().AddNewtonsoftJson();
 
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -73,6 +75,8 @@ namespace ExchangeRate.API
                             .AddExchangeRateInfrastructure();
 
             var app = builder.Build();
+
+            // TODO: add exception middleware
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

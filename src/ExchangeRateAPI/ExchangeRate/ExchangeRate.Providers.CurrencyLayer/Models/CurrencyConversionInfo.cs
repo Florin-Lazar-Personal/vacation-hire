@@ -8,7 +8,7 @@ namespace ExchangeRate.Providers.CurrencyLayer.Models
     {
         [JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonProperty("timestamp")]
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTime Timestamp { get; set; }
 
         [JsonProperty("quote")]
         public decimal Quote { get; set; }

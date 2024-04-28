@@ -36,6 +36,7 @@ namespace ExchangeRate.Services
                 throw new CurrencyNotSupportedException(to.Symbol);
             }
 
+            // TODO: Catch provider exceptions.
             Providers.Models.CurrencyExchangeResult exchangeResult = await _provider.ExchangeCurrencyAsync(
                 fromCurrency,
                 from.Amount,
