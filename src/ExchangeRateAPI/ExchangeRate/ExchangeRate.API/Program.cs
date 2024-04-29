@@ -6,6 +6,8 @@ using ExchangeRate.Providers.Mock;
 using ExchangeRate.Providers.CurrencyLayer;
 using ExchangeRate.Infrastructure.DependencyInjection;
 using Newtonsoft.Json;
+using ExchangeRate.API.Configuration;
+using Serilog;
 
 namespace ExchangeRate.API
 {
@@ -13,39 +15,53 @@ namespace ExchangeRate.API
     {
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            Log.Logger = new LoggerConfiguration()
+                            .WriteTo.Console()
+                            .CreateLogger();
 
-
-            builder.Services.AddAuthentication(options =>
+            try
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer();
+                Log.Information("Starting web application");
 
-            // Add services to the container.
-            builder.Services.AddControllers().AddNewtonsoftJson();
+                WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerExamplesFromAssemblyOf<Program>();
-            builder.Services.AddSwaggerGen(c =>
-            {
-                c.ExampleFilters();
-
-                // Add (Auth) to action summary
-                c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();
-
-                c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+                ExchangeRateConfiguration? configuration = builder.Configuration.Get<ExchangeRateConfiguration>();
+                if (configuration is null)
                 {
-                    Description = "JWT Authorization header using the Bearer scheme",
-                    Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.Http,
-                    Scheme = JwtBearerDefaults.AuthenticationScheme
-                });
+                    Log.Fatal("Failed to load service configuration");
+                    return;
+                }
 
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                builder.Services.AddAuthentication(options =>
+                {
+                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                }).AddJwtBearer();
+
+                // Add services to the container.
+                builder.Services.AddControllers().AddNewtonsoftJson();
+
+
+                // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+                builder.Services.AddEndpointsApiExplorer();
+                builder.Services.AddSwaggerExamplesFromAssemblyOf<Program>();
+                builder.Services.AddSwaggerGen(c =>
+                {
+                    c.ExampleFilters();
+
+                    // Add (Auth) to action summary
+                    c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();
+
+                    c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+                    {
+                        Description = "JWT Authorization header using the Bearer scheme",
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.Http,
+                        Scheme = JwtBearerDefaults.AuthenticationScheme
+                    });
+
+                    c.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
                      {
                         new OpenApiSecurityScheme
@@ -60,39 +76,46 @@ namespace ExchangeRate.API
                     }
                 });
 
-                
-            });
 
-            // exchange rate DI setup
-            builder.Services
-                            //.AddExchangeRate(p => p.AddMockProvider())
-                            .AddExchangeRate(p => p.AddCurrencyLayer(o =>
-                            {
-                                // TODO: read from config
-                                o.BaseUrl = "http://api.currencylayer.com";
-                                o.AccessKey = "ACCESS_KEY";
-                            }))
-                            .AddExchangeRateInfrastructure();
+                });
 
-            var app = builder.Build();
+                // exchange rate DI setup
+                builder.Services
+                                //.AddExchangeRate(p => p.AddMockProvider())
+                                .AddExchangeRate(p => p.AddCurrencyLayer(o =>
+                                {
+                                    o.BaseUrl = configuration.CurrencyLayer.BaseUrl;
+                                    o.AccessKey = configuration.CurrencyLayer.AccessKey;
+                                }))
+                                .AddExchangeRateInfrastructure();
 
-            // TODO: add exception middleware
+                var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
+                // TODO: add exception middleware
+
+                // Configure the HTTP request pipeline.
+                if (app.Environment.IsDevelopment())
+                {
+                    app.UseSwagger();
+                    app.UseSwaggerUI();
+                }
+
+                app.UseHttpsRedirection();
+
+                app.UseAuthorization();
+
+                app.MapControllers();
+
+                app.Run();
             }
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-            app.Run();
+            catch (Exception exStartup)
+            {
+                Log.Fatal(exStartup, "Application terminated unexpectedly");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
     }
 }
